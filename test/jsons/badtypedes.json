@@ -1,0 +1,11 @@
+[{
+	"vlue": 1000,
+	"type": "exense",
+	"description": "pet shop",
+	"id": "a"
+},
+{
+	"value": "500",
+	"type": "income",
+	"id": "a"
+}]
