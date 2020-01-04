@@ -20,8 +20,6 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", api.CreateInvoice)
-// Agregar mas handlings
-
 
 	srv := &http.Server{
 		Addr: "0.0.0.0:5000",

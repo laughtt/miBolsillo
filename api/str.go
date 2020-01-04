@@ -5,28 +5,21 @@ import (
 	"strconv"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
-	"reflect"
-	"strings"
 	"unicode"
+	"mibolsillo/pkg/tools"
 	"github.com/golang/gddo/httputil/header"
 )
 
-func (mr *MalformedRequest) Error() string {
-	return mr.Msg
-}
- 
-
-
+//CreateInvoice Handler for message
 func CreateInvoice(w http.ResponseWriter, r *http.Request) {
-	var p Message
+	
+	//Decoding , it will return a map of IDs and respond
+	mapResponse , err := decodeJSONBody(w, r)
 
-
-	err := decodeJSONBody(w, r, &p)
 	if err != nil {
-		var mr *MalformedRequest
+		var mr *tool.MalformedRequest
 		if errors.As(err, &mr) {
 			http.Error(w, mr.Msg, mr.Status)
 		} else {
@@ -36,45 +29,54 @@ func CreateInvoice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-}
-
-func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst interface{}) error {
-
-	if r.Header.Get("Content-Type") != "" {
-		value, _ := header.ParseValueAndParams(r.Header, "Content-Type")
-		if value != "application/json" {
-			Msg := "Content-Type header is not application/json"
-			return &MalformedRequest{Status: http.StatusUnsupportedMediaType, Msg: Msg}
-		}
-	}
-	//Max file size
-	r.Body = http.MaxBytesReader(w, r.Body, 8 * 1024 * 1024 * 1024)
-	
-	dec := json.NewDecoder(r.Body)
-	dec.DisallowUnknownFields()
-	dec.Token()
-	idMaps := make(map[string]*Response)
-	for dec.More() {
-		newdst := reflect.New(reflect.ValueOf(dst).Elem().Type()).Interface().(*Message)
-		if err := dec.Decode(newdst); err != nil {
-			return errorHandling(err)
-		}
-		if err := transformRespond(newdst, idMaps); err != nil {
-			return errorHandling(err)
-		}
-	}
-
 	arrayResponse := make([]*Response , 0)
 	
-	for _ , res := range idMaps{
+	//ADD ids to Responses to returne it
+	for _ , res := range mapResponse{
 		arrayResponse = append(arrayResponse, res)
 	}
 	//responses := Responses{Responses: arrayResponse}
 	json := json.NewEncoder(w)
-
+	//Return response
 	json.Encode(arrayResponse)
+	//Check last token
+}
+//
+func decodeJSONBody(w http.ResponseWriter, r *http.Request) (map[string]*Response ,error) {
+
+
+	//Check Header , if its not json return err
+	if r.Header.Get("Content-Type") != "" {
+		value, _ := header.ParseValueAndParams(r.Header, "Content-Type")
+		if value != "application/json" {
+			Msg := "Content-Type header is not application/json"
+			return nil , &tool.MalformedRequest{Status: http.StatusUnsupportedMediaType, Msg: Msg}
+		}
+	}
+	//Max file size 10 mb
+	r.Body = http.MaxBytesReader(w, r.Body, 8 * 1024 * 1024 * 10)
+	
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+	
 	dec.Token()
-	return nil
+
+
+	idMaps := make(map[string]*Response)
+
+	for dec.More() {
+		mess := &Message{}
+		if err := dec.Decode(mess); err != nil {
+			return nil , tool.ErrorHandling(err)
+		}
+		if err := transformRespond(mess, idMaps); err != nil {
+			return nil , tool.ErrorHandling(err)
+		}
+	}
+
+	dec.Token()
+
+	return idMaps , nil
 }
 
 func isInt(s string) bool {
@@ -89,14 +91,16 @@ func isInt(s string) bool {
 //DecodeJSONBody uncion para filtrar los errores de Json decoding
 func parsingValue(number interface{}) (float64, error) {
 	switch n := number.(type) {
+
 	case float64:
 		return n, nil
+
 	case string:
 		if isInt(n) {
 			return strconv.ParseFloat(n , 64) 
 		}
 	}
-	return 0, fmt.Errorf("Error parsing value tiene un valor invalido : %v", number)
+	return 0, fmt.Errorf("Error parsing value have an undefined type: %v", number)
 }
 
 func transformRespond(obj *Message, mapa map[string]*Response) error {
@@ -117,7 +121,7 @@ func transformRespond(obj *Message, mapa map[string]*Response) error {
 	case obj.Type == "expense":
 		expenses, err = parsingValue(obj.Value)
 	default:
-		return fmt.Errorf("Error parsing type es incorrecto: %s", obj.Type)
+		return fmt.Errorf("Error parsing type es incorrect: %s", obj.Type)
 	}
 	if err != nil {
 		return err
@@ -129,40 +133,3 @@ func transformRespond(obj *Message, mapa map[string]*Response) error {
 	return nil
 }
 
-func errorHandling(err error) error {
-	var syntaxError *json.SyntaxError
-	var unmarshalTypeError *json.UnmarshalTypeError
-
-	switch {
-	case errors.As(err, &syntaxError):
-		Msg := fmt.Sprintf("Request body contains badly-formed JSON (at position %d)", syntaxError.Offset)
-		return &MalformedRequest{Status: http.StatusBadRequest, Msg: Msg}
-
-	case errors.Is(err, io.ErrUnexpectedEOF):
-		Msg := fmt.Sprintf("Request body contains badly-formed JSON")
-		return &MalformedRequest{Status: http.StatusBadRequest, Msg: Msg}
-
-	case errors.As(err, &unmarshalTypeError):
-		Msg := fmt.Sprintf("Request body contains an invalid value for the %q field (at position %d)", unmarshalTypeError.Field, unmarshalTypeError.Offset)
-		return &MalformedRequest{Status: http.StatusBadRequest, Msg: Msg}
-
-	case strings.HasPrefix(err.Error(), "json: unknown field "):
-		fieldName := strings.TrimPrefix(err.Error(), "json: unknown field ")
-		Msg := fmt.Sprintf("Request body contains unknown field %s", fieldName)
-		return &MalformedRequest{Status: http.StatusBadRequest, Msg: Msg}
-
-	case errors.Is(err, io.EOF):
-		Msg := "Request body must not be empty"
-		return &MalformedRequest{Status: http.StatusBadRequest, Msg: Msg}
-
-	case err.Error() == "http: request body too large":
-		Msg := "Request body must not be larger than 1MB"
-		return &MalformedRequest{Status: http.StatusRequestEntityTooLarge, Msg: Msg}
-		
-	case strings.HasPrefix(err.Error(), "Error parsing"):
-		Msg := fmt.Sprintf(err.Error())
-		return &MalformedRequest{Status: http.StatusBadRequest , Msg: Msg}
-	default:
-		return err
-	}
-}
