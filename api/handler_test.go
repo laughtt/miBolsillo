@@ -3,28 +3,35 @@ package api
 
 import (
 	"bytes"
+	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 )
 
-func TestHealthCheckHandler(t *testing.T) {
-	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
-	// pass 'nil' as the third parameter.
-	req, err := http.NewRequest("PUT", "/a", bytes.NewBuffer([]byte{0,0}))
+
+func checkFile(f os.FileInfo, client *http.Client, path string, t *testing.T) {
+	file, err := os.Open(fmt.Sprintf("%s/%s", path, f.Name()))
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	b, err := ioutil.ReadAll(file)
+
+	req, err := http.NewRequest("PUT", "/", bytes.NewBuffer(b))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(CreateInvoice)
 
-	// Our handlers satisfy http.Handler, so we can call their ServeHTTP method
-	// directly and pass in our Request and ResponseRecorder.
 	handler.ServeHTTP(rr, req)
 
-	// Check the status code is what we expect.
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
@@ -35,5 +42,30 @@ func TestHealthCheckHandler(t *testing.T) {
 	if rr.Body.String() != expected {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			rr.Body.String(), expected)
+	}
+	os.Stderr.Close()
+	file.Close()
+}
+
+func TestHandler(t *testing.T) {
+
+	files, _ := ioutil.ReadDir("../test/jsons/badTest")
+
+	client := &http.Client{}
+
+	for _, f := range files {
+		checkFile(f, client, "../test/jsons/badTest", t)
+	}
+
+	// files, _ = ioutil.ReadDir("./jsons/big")
+	// for _, f := range files {
+	// 	for i := 0; i < 100; i++ {
+	// 		TestHealthCheckHandler(f, client, "./jsons/big")
+	// 	}
+	// }
+
+	files, _ = ioutil.ReadDir("../test/jsons/correct")
+	for _, f := range files {
+		checkFile(f, client, "../test/jsons/correct", t)
 	}
 }
