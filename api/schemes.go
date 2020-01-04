@@ -1,5 +1,10 @@
 package api
 
+
+const (
+	//10 mb
+	limitSizeFile = 10485760
+)
 //Responses array for the output
 type Responses struct {
 	Responses []*Response `json:""`

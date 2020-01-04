@@ -1,0 +1,24 @@
+[{
+	"value": 1000,
+	"type": "expense",
+	"description": "pet shop",
+	"id": "a"
+},
+{
+	"value": "500",
+	"type": "income",
+	"id": "a"
+}
+,
+{
+	"value": "500",
+	"type": "income",
+	"id": "b"
+}
+,
+{
+	"value": "500",
+	"type": "expense",
+	"id": "b"
+}
+]

@@ -2,21 +2,22 @@ package api
 
 import (
 	"encoding/json"
-	"strconv"
 	"errors"
 	"fmt"
 	"log"
-	"net/http"
-	"unicode"
 	"mibolsillo/pkg/tools"
+	"net/http"
+	"strconv"
+	"unicode"
 	"github.com/golang/gddo/httputil/header"
 )
 
 //CreateInvoice Handler for message
 func CreateInvoice(w http.ResponseWriter, r *http.Request) {
-	
+
 	//Decoding , it will return a map of IDs and respond
-	mapResponse , err := decodeJSONBody(w, r)
+	mapResponse, err := decodeEncodeJSONBody(w, r)
+
 
 	if err != nil {
 		var mr *tool.MalformedRequest
@@ -29,54 +30,59 @@ func CreateInvoice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	arrayResponse := make([]*Response , 0)
-	
+	arrayResponse := make([]*Response, 0)
+
 	//ADD ids to Responses to returne it
-	for _ , res := range mapResponse{
+	for key , res := range mapResponse {
 		arrayResponse = append(arrayResponse, res)
+		delete(mapResponse,key)
 	}
 	//responses := Responses{Responses: arrayResponse}
 	json := json.NewEncoder(w)
 	//Return response
 	json.Encode(arrayResponse)
-	//Check last token
-}
-//
-func decodeJSONBody(w http.ResponseWriter, r *http.Request) (map[string]*Response ,error) {
 
+}
+
+
+
+//Decode
+func decodeEncodeJSONBody(w http.ResponseWriter, r *http.Request) (map[string]*Response, error) {
 
 	//Check Header , if its not json return err
 	if r.Header.Get("Content-Type") != "" {
 		value, _ := header.ParseValueAndParams(r.Header, "Content-Type")
 		if value != "application/json" {
 			Msg := "Content-Type header is not application/json"
-			return nil , &tool.MalformedRequest{Status: http.StatusUnsupportedMediaType, Msg: Msg}
+			return nil, &tool.MalformedRequest{Status: http.StatusUnsupportedMediaType, Msg: Msg}
 		}
 	}
+
 	//Max file size 10 mb
-	r.Body = http.MaxBytesReader(w, r.Body, 8 * 1024 * 1024 * 10)
-	
+	r.Body = http.MaxBytesReader(w, r.Body, limitSizeFile)
+
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
-	
-	dec.Token()
 
+	dec.Token()
 
 	idMaps := make(map[string]*Response)
 
 	for dec.More() {
 		mess := &Message{}
+		
 		if err := dec.Decode(mess); err != nil {
-			return nil , tool.ErrorHandling(err)
+			return nil, tool.ErrorHandling(err)
 		}
-		if err := transformRespond(mess, idMaps); err != nil {
-			return nil , tool.ErrorHandling(err)
+
+		if err := encodeJSON(mess, idMaps); err != nil {
+			return nil, tool.ErrorHandling(err)
 		}
 	}
 
 	dec.Token()
 
-	return idMaps , nil
+	return idMaps, nil
 }
 
 func isInt(s string) bool {
@@ -97,19 +103,20 @@ func parsingValue(number interface{}) (float64, error) {
 
 	case string:
 		if isInt(n) {
-			return strconv.ParseFloat(n , 64) 
+			return strconv.ParseFloat(n, 64)
 		}
 	}
 	return 0, fmt.Errorf("Error parsing value have an undefined type: %v", number)
 }
 
-func transformRespond(obj *Message, mapa map[string]*Response) error {
+func encodeJSON(obj *Message, mapa map[string]*Response) error {
 	//value , err := fromInterfactToInt(newObj.Value)
 	var income float64
 	var expenses float64
 	var err error
-	
-	re , ok := mapa[obj.ID]
+
+	// if exist id append the list to it , if not create a new id
+	re, ok := mapa[obj.ID]
 	if !ok {
 		re = &Response{User: obj.ID}
 		mapa[obj.ID] = re
@@ -129,7 +136,7 @@ func transformRespond(obj *Message, mapa map[string]*Response) error {
 
 	re.Expenses += expenses
 	re.Revenue += income
+	//Maybe use bufferring size for memory efficient
 	re.Transactions = append(re.Transactions, obj)
 	return nil
 }
-
