@@ -2,8 +2,7 @@ package api
 
 
 const (
-	//10 mb
-	limitSizeFile = 10485760
+	limitSizeFile = 10485760 // 10 mb
 )
 //Responses array for the output
 type Responses struct {

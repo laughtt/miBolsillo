@@ -11,7 +11,12 @@ import (
 	"os"
 	"testing"
 )
-
+const(
+	empty = "[]"
+	normal = " "
+	normal1 = " "
+	nothing = "[]"
+)
 
 func checkFile(f os.FileInfo, client *http.Client, path string, t *testing.T) {
 	file, err := os.Open(fmt.Sprintf("%s/%s", path, f.Name()))
@@ -32,16 +37,20 @@ func checkFile(f os.FileInfo, client *http.Client, path string, t *testing.T) {
 
 	handler.ServeHTTP(rr, req)
 
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
+	if path == "../test/jsons/badTest" {
+		if status := rr.Code; status == http.StatusAccepted {
+			t.Errorf("handler returned wrong status code: got %v want %v",
+				status, http.StatusBadRequest)
+	
+		}
+
 	}
 
-	// Check the response body is what we expect.
-	expected := `{"alive": true}`
-	if rr.Body.String() != expected {
-		t.Errorf("handler returned unexpected body: got %v want %v",
-			rr.Body.String(), expected)
+	if path == "../test/jsons/correct" {
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("handler returned wrong status code: got %v want %v",
+				status, http.StatusBadRequest)
+		}
 	}
 	os.Stderr.Close()
 	file.Close()

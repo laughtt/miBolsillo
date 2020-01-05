@@ -12,9 +12,12 @@ import (
 	"github.com/golang/gddo/httputil/header"
 )
 
+var count int 
 //CreateInvoice Handler for message
 func CreateInvoice(w http.ResponseWriter, r *http.Request) {
 
+	count++
+	fmt.Println(count)
 	//Decoding , it will return a map of IDs and respond
 	mapResponse, err := decodeEncodeJSONBody(w, r)
 

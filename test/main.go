@@ -8,11 +8,10 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"testing"
 )
 
 const (
-	url = "http://localhost:5000/invoice"
+	url = "http://localhost:5000"
 )
 
 

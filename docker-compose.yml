@@ -1,9 +1,18 @@
-version: '2.1'
+version: '3.0'
 
 services:
   mibolsillo:
     image: mibolsillo
-    container_name: mibolsillov1
+    container_name: mibolsilloV1
+    deploy:
+      resources:
+        limits: 
+          cpus : '1.0'
+          memory: 20M
+        reservations:
+          cpus: '0.1'
+          memory: 10M 
+      replicas: 2
     build: .
     ports:
       - 5000:5000
