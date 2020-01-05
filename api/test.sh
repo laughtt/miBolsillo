@@ -1,2 +1,2 @@
-go test -coverprofile cover
+go test ./api -coverprofile cover
 go tool cover -html=cover

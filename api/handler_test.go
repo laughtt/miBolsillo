@@ -11,11 +11,10 @@ import (
 	"os"
 	"testing"
 )
-const(
-	empty = "[]"
-	normal = " "
-	normal1 = " "
-	nothing = "[]"
+
+const (
+	badTestPath  = "../test/jsons/badTest"
+	goodTestPath = "../test/jsons/correct"
 )
 
 func checkFile(f os.FileInfo, client *http.Client, path string, t *testing.T) {
@@ -37,16 +36,16 @@ func checkFile(f os.FileInfo, client *http.Client, path string, t *testing.T) {
 
 	handler.ServeHTTP(rr, req)
 
-	if path == "../test/jsons/badTest" {
+	if path == badTestPath {
 		if status := rr.Code; status == http.StatusAccepted {
 			t.Errorf("handler returned wrong status code: got %v want %v",
 				status, http.StatusBadRequest)
-	
+
 		}
 
 	}
 
-	if path == "../test/jsons/correct" {
+	if path == goodTestPath {
 		if status := rr.Code; status != http.StatusOK {
 			t.Errorf("handler returned wrong status code: got %v want %v",
 				status, http.StatusBadRequest)
@@ -58,12 +57,12 @@ func checkFile(f os.FileInfo, client *http.Client, path string, t *testing.T) {
 
 func TestHandler(t *testing.T) {
 
-	files, _ := ioutil.ReadDir("../test/jsons/badTest")
+	files, _ := ioutil.ReadDir(badTestPath)
 
 	client := &http.Client{}
 
 	for _, f := range files {
-		checkFile(f, client, "../test/jsons/badTest", t)
+		checkFile(f, client, badTestPath, t)
 	}
 
 	// files, _ = ioutil.ReadDir("./jsons/big")
@@ -73,8 +72,8 @@ func TestHandler(t *testing.T) {
 	// 	}
 	// }
 
-	files, _ = ioutil.ReadDir("../test/jsons/correct")
+	files, _ = ioutil.ReadDir(goodTestPath)
 	for _, f := range files {
-		checkFile(f, client, "../test/jsons/correct", t)
+		checkFile(f, client, goodTestPath, t)
 	}
 }

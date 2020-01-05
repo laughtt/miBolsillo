@@ -2,8 +2,7 @@ version: '3.0'
 
 services:
   mibolsillo:
-    image: mibolsillo
-    container_name: mibolsilloV1
+    image: laught/mibolsillo
     deploy:
       resources:
         limits: 

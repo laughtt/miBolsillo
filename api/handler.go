@@ -5,22 +5,21 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"mibolsillo/pkg/tools"
+	tool "mibolsillo/pkg/tools"
 	"net/http"
 	"strconv"
 	"unicode"
+
 	"github.com/golang/gddo/httputil/header"
 )
 
-var count int 
+var count int
+
 //CreateInvoice Handler for message
 func CreateInvoice(w http.ResponseWriter, r *http.Request) {
 
-	count++
-	fmt.Println(count)
 	//Decoding , it will return a map of IDs and respond
 	mapResponse, err := decodeEncodeJSONBody(w, r)
-
 
 	if err != nil {
 		var mr *tool.MalformedRequest
@@ -36,9 +35,9 @@ func CreateInvoice(w http.ResponseWriter, r *http.Request) {
 	arrayResponse := make([]*Response, 0)
 
 	//ADD ids to Responses to returne it
-	for key , res := range mapResponse {
+	for key, res := range mapResponse {
 		arrayResponse = append(arrayResponse, res)
-		delete(mapResponse,key)
+		delete(mapResponse, key)
 	}
 	//responses := Responses{Responses: arrayResponse}
 	json := json.NewEncoder(w)
@@ -46,8 +45,6 @@ func CreateInvoice(w http.ResponseWriter, r *http.Request) {
 	json.Encode(arrayResponse)
 
 }
-
-
 
 //Decode
 func decodeEncodeJSONBody(w http.ResponseWriter, r *http.Request) (map[string]*Response, error) {
@@ -73,7 +70,7 @@ func decodeEncodeJSONBody(w http.ResponseWriter, r *http.Request) (map[string]*R
 
 	for dec.More() {
 		mess := &Message{}
-		
+
 		if err := dec.Decode(mess); err != nil {
 			return nil, tool.ErrorHandling(err)
 		}

@@ -12,6 +12,6 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /app
 COPY --from=builder /go/src/app .
 RUN  chmod +x main
-LABEL Name=mibolsillo Version=0.0.1
+LABEL Name=laught/mibolsillo Version=0.0.1
 EXPOSE 5000
 CMD ["./main"]
