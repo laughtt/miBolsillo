@@ -15,4 +15,3 @@ RUN  chmod +x main
 LABEL Name=mibolsillo Version=0.0.1
 EXPOSE 5000
 CMD ["./main"]
-

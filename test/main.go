@@ -68,6 +68,4 @@ func main() {
 	defer func(){
 		os.Stderr.Close()
 	}()
-
-
 }
