@@ -7,10 +7,7 @@ services:
       resources:
         limits: 
           cpus : '1.0'
-          memory: 40M
-        reservations:
-          cpus: '0.2'
-          memory: 20M 
+          memory: 200M
       replicas: 4
     build: .
     ports:

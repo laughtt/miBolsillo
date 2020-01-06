@@ -66,15 +66,18 @@ func decodeEncodeJSONBody(w http.ResponseWriter, r *http.Request) (map[string]*R
 
 	dec.Token()
 
+	//Mapa de ids , donde se guardara el array *Response por cada id
 	idMaps := make(map[string]*Response)
 
 	for dec.More() {
 		mess := &Message{}
 
+		//Decode y lo pone en el struct *Message
 		if err := dec.Decode(mess); err != nil {
 			return nil, tool.ErrorHandling(err)
 		}
 
+		//Encode y lo pone en el struct *Response  
 		if err := encodeJSON(mess, idMaps); err != nil {
 			return nil, tool.ErrorHandling(err)
 		}
@@ -93,9 +96,9 @@ func isInt(s string) bool {
 	}
 	return true
 }
-
-//DecodeJSONBody uncion para filtrar los errores de Json decoding
+//Parsear y asegurarse que el valor sea un numero
 func parsingValue(number interface{}) (float64, error) {
+
 	switch n := number.(type) {
 
 	case float64:
@@ -122,6 +125,7 @@ func encodeJSON(obj *Message, mapa map[string]*Response) error {
 		mapa[obj.ID] = re
 	}
 
+	//Filtrar si solo puede ser INCOME o EXPENSE
 	switch {
 	case obj.Type == "income":
 		income, err = parsingValue(obj.Value)
@@ -134,6 +138,7 @@ func encodeJSON(obj *Message, mapa map[string]*Response) error {
 		return err
 	}
 
+	//Actualizar las variables expense y Revenue
 	re.Expenses += expenses
 	re.Revenue += income
 	//Maybe use bufferring size for memory efficient
